@@ -7,29 +7,26 @@ const PORT = 4000;
 app.use(cors());
 app.use(express.json());
 
-// ===== In-memory data =====
+
 let users = [
-  { id: 1, username: "admin", password: "admin123", role: "admin" } // default admin
+  { id: 1, username: "admin", password: "admin123", role: "admin" } 
 ];
 let nextUserId = 2;
 
 let classes = [];
 let nextClassId = 1;
 
-let bookings = []; // { id, classId, memberId }
+let bookings = []; 
 let nextBookingId = 1;
 
-let workouts = []; // { id, memberId, date, type, duration, notes }
+let workouts = []; 
 let nextWorkoutId = 1;
 
-// Helper: find user by id
+
 function getUser(id) {
   return users.find(u => u.id === id);
 }
 
-// ===== AUTH =====
-
-// Register new member
 app.post("/api/auth/register", (req, res) => {
   const { username, password } = req.body;
   if (!username || !password)
@@ -42,7 +39,7 @@ app.post("/api/auth/register", (req, res) => {
   const newUser = {
     id: nextUserId++,
     username,
-    password, // NOTE: plain text; OK for course, not for real production
+    password, 
     role: "member"
   };
   users.push(newUser);
@@ -53,7 +50,7 @@ app.post("/api/auth/register", (req, res) => {
   });
 });
 
-// Login
+
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body;
   const user = users.find(
@@ -61,18 +58,14 @@ app.post("/api/auth/login", (req, res) => {
   );
   if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-  // No JWT, we just return the user; frontend will store it
+  
   res.json({
     message: "Login successful",
     user: { id: user.id, username: user.username, role: user.role }
   });
 });
 
-// ===== CLASSES (admin + member read) =====
-
-// Get all classes
 app.get("/api/classes", (req, res) => {
-  // Attach currentBooked count
   const result = classes.map(cls => {
     const booked = bookings.filter(b => b.classId === cls.id).length;
     return { ...cls, booked };
@@ -80,7 +73,7 @@ app.get("/api/classes", (req, res) => {
   res.json(result);
 });
 
-// Create class (admin only)
+
 app.post("/api/classes", (req, res) => {
   const { adminId, name, date, time, capacity } = req.body;
 
@@ -102,7 +95,7 @@ app.post("/api/classes", (req, res) => {
   res.status(201).json(newClass);
 });
 
-// Delete class (admin only)
+
 app.delete("/api/classes/:id", (req, res) => {
   const { adminId } = req.body;
   const admin = getUser(adminId);
@@ -111,13 +104,10 @@ app.delete("/api/classes/:id", (req, res) => {
 
   const classId = Number(req.params.id);
   classes = classes.filter(c => c.id !== classId);
-  bookings = bookings.filter(b => b.classId !== classId); // remove related bookings
+  bookings = bookings.filter(b => b.classId !== classId); 
   res.json({ message: "Class deleted" });
 });
 
-// ===== BOOKINGS (members) =====
-
-// Member books class
 app.post("/api/classes/:id/book", (req, res) => {
   const classId = Number(req.params.id);
   const { memberId } = req.body;
@@ -144,7 +134,6 @@ app.post("/api/classes/:id/book", (req, res) => {
   res.status(201).json(booking);
 });
 
-// Cancel booking
 app.delete("/api/bookings/:id", (req, res) => {
   const bookingId = Number(req.params.id);
   const { memberId } = req.body;
@@ -159,7 +148,6 @@ app.delete("/api/bookings/:id", (req, res) => {
   res.json({ message: "Booking cancelled" });
 });
 
-// Get bookings for a member (with class info)
 app.get("/api/members/:id/bookings", (req, res) => {
   const memberId = Number(req.params.id);
   const list = bookings
@@ -171,9 +159,7 @@ app.get("/api/members/:id/bookings", (req, res) => {
   res.json(list);
 });
 
-// ===== WORKOUTS =====
 
-// Log workout
 app.post("/api/workouts", (req, res) => {
   const { memberId, date, type, duration, notes } = req.body;
 
@@ -196,14 +182,12 @@ app.post("/api/workouts", (req, res) => {
   res.status(201).json(workout);
 });
 
-// Get workout history for member
 app.get("/api/members/:id/workouts", (req, res) => {
   const memberId = Number(req.params.id);
   const list = workouts.filter(w => w.memberId === memberId);
   res.json(list);
 });
 
-// ===== Start server =====
 app.listen(PORT, () => {
   console.log(`Backend running at http://localhost:${PORT}`);
 });
